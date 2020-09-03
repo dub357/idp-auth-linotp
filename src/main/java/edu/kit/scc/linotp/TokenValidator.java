@@ -41,34 +41,31 @@ public class TokenValidator extends AbstractValidationAction {
 	private Function<ProfileRequestContext,String> usernameLookupStrategy;
 	private String username;
 	
-	private String host;
-	private String serviceUsername;
-	private String servicePassword;
-	private Boolean checkCert;
-
+  private LinotpConnection connection;
+  
 	public TokenValidator() {
 			usernameLookupStrategy = new CanonicalUsernameLookupStrategy();
 	}
 
-    @Override
-    protected boolean doPreExecute(
-            @Nonnull ProfileRequestContext profileRequestContext,
-            @Nonnull AuthenticationContext authenticationContext) {
-        if (!super.doPreExecute(profileRequestContext, authenticationContext)) {
-            return false;
-        }
+  @Override
+  protected boolean doPreExecute(
+      @Nonnull ProfileRequestContext profileRequestContext,
+      @Nonnull AuthenticationContext authenticationContext) {
+    if (!super.doPreExecute(profileRequestContext, authenticationContext)) {
+      return false;
+    }
 
 		username = usernameLookupStrategy.apply(profileRequestContext);
 
-        if (username == null) {
-        	logger.warn("{} No previous SubjectContext or Principal is set", getLogPrefix());
-        	handleError(profileRequestContext, authenticationContext, "NoCredentials", AuthnEventIds.NO_CREDENTIALS);
-        	return false;
-        }
-        
-    	logger.debug("{} PrincipalName from SubjectContext is {}", getLogPrefix(), username);
-        return true;
+    if (username == null) {
+      logger.warn("{} No previous SubjectContext or Principal is set", getLogPrefix());
+      handleError(profileRequestContext, authenticationContext, "NoCredentials", AuthnEventIds.NO_CREDENTIALS);
+      return false;
     }
+        
+    logger.debug("{} PrincipalName from SubjectContext is {}", getLogPrefix(), username);
+    return true;
+  }
 	
 	@Override
 	protected Subject populateSubject(Subject subject) {
@@ -91,7 +88,6 @@ public class TokenValidator extends AbstractValidationAction {
 		logger.debug("{} TokenValidator is called with token {} for user {}", getLogPrefix(), tokenCtx.getToken(), username);
 
 		try {
-			LinotpConnection connection = new LinotpConnection(host, serviceUsername, servicePassword, checkCert);
 			boolean login = connection.validateToken(tokenCtx);
 			
 			if (login == true) {
@@ -110,27 +106,8 @@ public class TokenValidator extends AbstractValidationAction {
 		}
 	}
 	
-	public void setHost(@Nonnull @NotEmpty final String fieldName) {
-		logger.debug("{} {} is tokencode field from the form", getLogPrefix(), fieldName);
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		host = fieldName;
-	}
-
-	public void setServiceUsername(@Nonnull @NotEmpty final String fieldName) {
-		logger.debug("{} {} is tokencode field from the form", getLogPrefix(), fieldName);
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		serviceUsername = fieldName;
-	}
-
-	public void setServicePassword(@Nonnull @NotEmpty final String fieldName) {
-		logger.debug("{} {} is tokencode field from the form", getLogPrefix(), fieldName);
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		servicePassword = fieldName;
-	}
-
-	public void setCheckCert(@Nonnull @NotEmpty final Boolean fieldName) {
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		checkCert = fieldName;
-	}
-
+  public void setLinotpConnection(@Nonnull @NotEmpty final LinotpConnection fieldName){
+    ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
+		connection = fieldName;
+  }
 }

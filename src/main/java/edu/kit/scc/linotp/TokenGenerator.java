@@ -43,34 +43,31 @@ public class TokenGenerator extends AbstractProfileAction<SAMLObject, SAMLObject
 	private Function<ProfileRequestContext,String> usernameLookupStrategy;
 	protected String username;
 
-	private String host;
-	private String serviceUsername;
-	private String servicePassword;
-	private Boolean checkCert;
 	private Boolean createEmailToken;
-	
+	private LinotpConnection connection;
+  
 	public TokenGenerator() {
 		usernameLookupStrategy = new CanonicalUsernameLookupStrategy();
 	}
 
-    @Override
-    protected void doInitialize() throws ComponentInitializationException {
-        super.doInitialize();
-    }
+  @Override
+  protected void doInitialize() throws ComponentInitializationException {
+      super.doInitialize();
+  }
     
 	@Override
 	protected boolean doPreExecute(ProfileRequestContext<SAMLObject, SAMLObject> profileRequestContext) {
 		logger.debug("Entering GenerateNewToken doPreExecute");
 
-        if (!super.doPreExecute(profileRequestContext)) {
-            return false;
-        }
+    if (!super.doPreExecute(profileRequestContext)) {
+        return false;
+    }
 
 		try {
 			AuthenticationContext authenticationContext = profileRequestContext.getSubcontext(AuthenticationContext.class);
 			if (authenticationContext == null) {
-	        	logger.warn("{} No AuthenticationContext is set", getLogPrefix());
-	        	return false;
+        logger.warn("{} No AuthenticationContext is set", getLogPrefix());
+        return false;
 			}
 			
 			tokenCtx = profileRequestContext.getSubcontext(AuthenticationContext.class)
@@ -78,13 +75,13 @@ public class TokenGenerator extends AbstractProfileAction<SAMLObject, SAMLObject
 
 			username = usernameLookupStrategy.apply(profileRequestContext);
 
-	        if (username == null) {
-	        	logger.warn("{} No previous SubjectContext or Principal is set", getLogPrefix());
-	        	return false;
-	        }
+      if (username == null) {
+        logger.warn("{} No previous SubjectContext or Principal is set", getLogPrefix());
+        return false;
+      }
 			
-	    	logger.debug("{} PrincipalName from SubjectContext is {}", getLogPrefix(), username);
-	    	tokenCtx.setUsername(username);
+      logger.debug("{} PrincipalName from SubjectContext is {}", getLogPrefix(), username);
+      tokenCtx.setUsername(username);
 	    	
 			return true;
 		} catch (Exception e) {
@@ -93,12 +90,11 @@ public class TokenGenerator extends AbstractProfileAction<SAMLObject, SAMLObject
 		}
 	}	
 
-    @Override
+  @Override
 	protected void doExecute(@Nonnull final ProfileRequestContext<SAMLObject, SAMLObject> profileRequestContext) {
-    	logger.debug("Entering GenerateNewToken doExecute");
+    logger.debug("Entering GenerateNewToken doExecute");
 			
 		try {
-			LinotpConnection connection = new LinotpConnection(host, serviceUsername, servicePassword, checkCert);
 			connection.requestAdminSession();
 			List<LinotpTokenInfo> tokenList = connection.getTokenInfoList(username);
 			
@@ -117,28 +113,12 @@ public class TokenGenerator extends AbstractProfileAction<SAMLObject, SAMLObject
 		} catch (Exception e) {
 			logger.debug("Failed to create new token", e);
 		}
-		
 	}
 
-	public void setHost(@Nonnull @NotEmpty final String fieldName) {
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		host = fieldName;
-	}
-
-	public void setServiceUsername(@Nonnull @NotEmpty final String fieldName) {
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		serviceUsername = fieldName;
-	}
-
-	public void setServicePassword(@Nonnull @NotEmpty final String fieldName) {
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		servicePassword = fieldName;
-	}
-
-	public void setCheckCert(@Nonnull @NotEmpty final Boolean fieldName) {
-		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
-		checkCert = fieldName;
-	}
+  public void setLinotpConnection(@Nonnull @NotEmpty final LinotpConnection fieldName){
+    ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
+		connection = fieldName;
+  }
 
 	public void setCreateEmailToken(@Nonnull @NotEmpty final Boolean fieldName) {
 		ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);

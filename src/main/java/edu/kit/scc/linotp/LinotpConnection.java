@@ -60,12 +60,15 @@ public class LinotpConnection {
 	protected CloseableHttpClient httpClient;
 	protected HttpClientContext httpContext;
 	protected String host;
-	
+	protected String prePath;
 	protected String sessionId;
 
-	public LinotpConnection(String host, String serviceUsername, String servicePassword, Boolean checkCert) throws LinotpSessionException {
+	public LinotpConnection(String host, String prePath, String serviceUsername, String servicePassword, Boolean checkCert) throws LinotpSessionException {
+    logger.debug("host=" + host + ", prePath=" + prePath + ", serviceUsername=" + serviceUsername + ", servicePassword=" + (servicePassword != null ? "***" : null) + ", checkCert=" + checkCert);
+    
 		this.host = host;
-		
+		this.prePath = prePath;
+    
 		httpClient = getHttpClient(checkCert);
 		httpContext = getHttpContext(serviceUsername, servicePassword);
 		
@@ -85,7 +88,7 @@ public class LinotpConnection {
     	try {
 			URI uri = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/admin/userlist")
+					.setPath((prePath != null ? prePath : "") + "/admin/userlist")
 					.setParameter("session", sessionId)
 					.setParameter(criteria, searchExpression)
 					.build();
@@ -125,7 +128,7 @@ public class LinotpConnection {
 		try {
 			URIBuilder uriBuilder = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/validate/check")
+					.setPath((prePath != null ? prePath : "") + "/validate/check")
 					.setParameter("user", tokenCtx.getUsername())
 					.setParameter("pass", tokenCtx.getToken());
 
@@ -176,7 +179,7 @@ public class LinotpConnection {
 		try {
 			URI uri = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/validate/check")
+					.setPath((prePath != null ? prePath : "") + "/validate/check")
 					.setParameter("user", tokenCtx.getUsername())
 					.setParameter("pass", "")
 					.build();
@@ -229,7 +232,7 @@ public class LinotpConnection {
     	try {
 			URI uri = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/admin/init")
+					.setPath((prePath != null ? prePath : "") + "/admin/init")
 					.setParameter("session", sessionId)
 					.setParameter("user", username)
 					.setParameter("type", "email")
@@ -268,7 +271,7 @@ public class LinotpConnection {
     	try {
 			URI uri = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/admin/show")
+					.setPath((prePath != null ? prePath : "") + "/admin/show")
 					.setParameter("user", username)
 					.setParameter("session", sessionId)
 					.build();
@@ -307,7 +310,7 @@ public class LinotpConnection {
     	try {
 			URI uri = new URIBuilder().setScheme("https")
 					.setHost(host)
-					.setPath("/admin/getsession")
+					.setPath((prePath != null ? prePath : "") + "/admin/getsession")
 					.build();
 			
 			HttpGet httpget = new HttpGet(uri);
@@ -359,13 +362,15 @@ public class LinotpConnection {
 
 	
     private HttpClientContext getHttpContext(String serviceUsername, String servicePassword) {
-    	CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    	credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(serviceUsername + ":" + servicePassword));
+      HttpClientContext context = HttpClientContext.create();
+      if (serviceUsername != null && !serviceUsername.trim().equals("") && servicePassword != null && !servicePassword.trim().equals("")){
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(serviceUsername + ":" + servicePassword));
+        context.setCredentialsProvider(credentialsProvider);
+      }
     	CookieStore cookieStore = new BasicCookieStore();
-	    HttpClientContext context = HttpClientContext.create();
 	    context.setCookieStore(cookieStore);
-	    context.setCredentialsProvider(credentialsProvider);
-		return context;    	
+      return context;    	
     }
     
 	private CloseableHttpClient getHttpClient(Boolean checkCert) throws LinotpSessionException {
